@@ -1,32 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { agentApi, type Invoice, type Lead } from "@/lib/agent-api";
 
 export default function Index() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl flex-col gap-1 px-6 py-8">
-          <p className="text-sm font-medium text-muted-foreground">Alif Dev Studio</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">FreelanceOps Agent</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            An agent that drafts proposals, chases quiet leads, and reminds clients about overdue
-            invoices — built with Strands Agents on Amazon Bedrock. Only pings you for real
-            decisions.
+      <header className="mx-auto max-w-5xl px-6 pt-14 pb-10">
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <span className="font-mono text-xs text-primary">Alif Dev Studio</span>
+          <h1 className="font-display mt-2 text-4xl italic tracking-tight text-foreground sm:text-5xl">
+            FreelanceOps Agent
+          </h1>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+            Drafts proposals, chases quiet leads, and reminds clients about overdue invoices.
+            It works in the background and only surfaces when a real decision needs you.
           </p>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
+      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-6 pb-20">
         <AgentConsole />
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <ProposalDrafter />
           <OperationsPanel />
         </div>
@@ -36,7 +36,7 @@ export default function Index() {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Free-text agent console — the "actually agentic" entry point           */
+/* Agent console — dark, monospace: this is the agent's own voice         */
 /* ---------------------------------------------------------------------- */
 
 function AgentConsole() {
@@ -52,45 +52,53 @@ function AgentConsole() {
       const { response } = await agentApi.askAgent(prompt);
       setResponse(response);
     } catch (err) {
-      toast.error("Agent request failed", { description: (err as Error).message });
+      toast.error("The agent couldn't complete that", { description: (err as Error).message });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ask the agent</CardTitle>
-        <CardDescription>
-          It decides which tools to call — try "check my leads and draft follow-ups for anything
-          pending".
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <Textarea
-          placeholder="What do you need done?"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          rows={2}
-        />
+    <section className="rounded-sm border border-border/60 bg-secondary/60 p-5">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-lg text-foreground">Ask the agent</h2>
+        <p className="text-right font-mono text-xs text-muted-foreground">
+          decides which tools to call
+        </p>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Try "check my leads and draft follow-ups for anything pending."
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3">
+        <div className="flex items-start gap-2 rounded-sm border border-border/60 bg-background/40 px-3 py-2">
+          <span className="mt-2 font-mono text-sm text-primary">›</span>
+          <Textarea
+            placeholder="What do you need done?"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={2}
+            maxLength={2000}
+            className="resize-none border-0 bg-transparent p-0 font-mono text-sm text-foreground shadow-none focus-visible:ring-0"
+          />
+        </div>
         <div>
-          <Button onClick={ask} disabled={loading}>
-            {loading ? "Thinking…" : "Run"}
+          <Button onClick={ask} disabled={loading || !prompt.trim()}>
+            {loading ? "Working…" : "Run"}
           </Button>
         </div>
         {response && (
-          <pre className="whitespace-pre-wrap rounded-md border bg-muted p-4 text-sm text-foreground">
+          <pre className="mt-1 whitespace-pre-wrap rounded-sm border border-border/60 bg-background/40 p-4 font-mono text-sm leading-relaxed text-foreground">
             {response}
           </pre>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
 /* ---------------------------------------------------------------------- */
-/* Proposal drafter                                                       */
+/* Proposal drafter — a ledger/index card                                 */
 /* ---------------------------------------------------------------------- */
 
 function ProposalDrafter() {
@@ -107,42 +115,45 @@ function ProposalDrafter() {
       setProposal(proposal);
       toast.success("Proposal drafted and saved");
     } catch (err) {
-      toast.error("Couldn't draft proposal", { description: (err as Error).message });
+      toast.error("Couldn't draft that proposal", { description: (err as Error).message });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Draft a proposal</CardTitle>
-        <CardDescription>Paste a job post — the agent matches it to real past work.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <section className="rounded-md border border-border/60 bg-card p-5 text-card-foreground">
+      <h2 className="font-display text-lg">Draft a proposal</h2>
+      <p className="mt-1 text-sm text-card-foreground/70">
+        Paste a job post. The agent matches it to real past work.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3">
         <Textarea
           placeholder="Paste the job post here…"
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
           rows={6}
+          maxLength={6000}
+          className="border-card-foreground/15 bg-background/5 text-sm text-card-foreground placeholder:text-card-foreground/40"
         />
         <div>
-          <Button onClick={draft} disabled={loading}>
+          <Button onClick={draft} disabled={loading || !jobDescription.trim()}>
             {loading ? "Drafting…" : "Draft proposal"}
           </Button>
         </div>
         {proposal && (
-          <pre className="whitespace-pre-wrap rounded-md border bg-muted p-4 text-sm text-foreground">
+          <pre className="ledger-rule whitespace-pre-wrap pt-3 text-sm leading-relaxed text-card-foreground">
             {proposal}
           </pre>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
 /* ---------------------------------------------------------------------- */
-/* Stale leads + overdue invoices                                         */
+/* Stale leads + overdue invoices — the ledger                            */
 /* ---------------------------------------------------------------------- */
 
 function OperationsPanel() {
@@ -159,11 +170,17 @@ function OperationsPanel() {
       setLeads(stale_leads);
       setInvoices(overdue_invoices);
     } catch (err) {
-      toast.error("Couldn't load dashboard", { description: (err as Error).message });
+      toast.error("Couldn't load the ledger", { description: (err as Error).message });
     } finally {
       setLoading(false);
     }
   }
+
+  // Load once on first paint so the panel isn't empty by default.
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function draftFor(leadId: string) {
     setDrafting(leadId);
@@ -171,56 +188,66 @@ function OperationsPanel() {
       const { message } = await agentApi.draftFollowup(leadId);
       setFollowupText((prev) => ({ ...prev, [leadId]: message }));
     } catch (err) {
-      toast.error("Couldn't draft follow-up", { description: (err as Error).message });
+      toast.error("Couldn't draft that follow-up", { description: (err as Error).message });
     } finally {
       setDrafting(null);
     }
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+    <section className="rounded-md border border-border/60 bg-card p-5 text-card-foreground">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <CardTitle>Needs attention</CardTitle>
-          <CardDescription>Quiet leads and overdue invoices, pulled live.</CardDescription>
+          <h2 className="font-display text-lg">Needs attention</h2>
+          <p className="mt-1 text-sm text-card-foreground/70">
+            Quiet leads and overdue invoices, pulled live.
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          {loading ? "Loading…" : "Refresh"}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={load}
+          disabled={loading}
+          className="border-card-foreground/20 bg-transparent text-card-foreground hover:bg-card-foreground/5"
+        >
+          {loading ? "Refreshing…" : "Refresh"}
         </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {leads === null && invoices === null && (
-          <p className="text-sm text-muted-foreground">
-            Click refresh to pull today's stale leads and overdue invoices from Supabase.
+      </div>
+
+      <div className="mt-4 flex flex-col gap-5">
+        {leads === null && invoices === null && !loading && (
+          <p className="text-sm text-card-foreground/60">
+            Refresh to pull today's stale leads and overdue invoices from Supabase.
           </p>
         )}
 
         {leads && leads.length > 0 && (
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Quiet leads
-            </p>
+            <p className="text-sm font-medium text-card-foreground/80">Quiet leads</p>
             {leads.map((lead) => (
-              <div key={lead.id} className="rounded-md border p-3">
-                <div className="flex items-center justify-between gap-2">
+              <div key={lead.id} className="ledger-rule pt-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-foreground">{lead.client_name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.job_title}</p>
+                    <p className="text-sm font-medium">{lead.client_name}</p>
+                    <p className="text-sm text-card-foreground/60">{lead.job_title}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{lead.days_since_contact}d quiet</Badge>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge variant="secondary" className="font-mono text-[11px]">
+                      {lead.days_since_contact}d quiet
+                    </Badge>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => draftFor(lead.id)}
                       disabled={drafting === lead.id}
+                      className="border-card-foreground/20 bg-transparent text-card-foreground hover:bg-card-foreground/5"
                     >
                       {drafting === lead.id ? "Drafting…" : "Draft follow-up"}
                     </Button>
                   </div>
                 </div>
                 {followupText[lead.id] && (
-                  <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted p-3 text-xs text-foreground">
+                  <pre className="mt-2 whitespace-pre-wrap rounded-sm bg-background/5 p-3 text-xs leading-relaxed text-card-foreground">
                     {followupText[lead.id]}
                   </pre>
                 )}
@@ -230,28 +257,26 @@ function OperationsPanel() {
         )}
 
         {leads && leads.length === 0 && (
-          <p className="text-sm text-muted-foreground">No quiet leads right now. 🎉</p>
+          <p className="text-sm text-card-foreground/60">No quiet leads right now.</p>
         )}
 
         {invoices && invoices.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Overdue invoices
-            </p>
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-medium text-card-foreground/80">Overdue invoices</p>
             {invoices.map((inv) => (
-              <div
-                key={inv.id}
-                className="flex items-center justify-between rounded-md border p-3 text-sm"
-              >
-                <span className="text-foreground">{inv.client_name}</span>
-                <span className="text-muted-foreground">
-                  {inv.currency} {inv.amount} · {inv.days_overdue}d overdue
-                </span>
+              <div key={inv.id} className="ledger-rule flex items-start justify-between pt-3">
+                <span className="text-sm">{inv.client_name}</span>
+                <div className="text-right">
+                  <p className="font-mono text-sm">
+                    {inv.currency} {inv.amount.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-destructive">{inv.days_overdue} days overdue</p>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

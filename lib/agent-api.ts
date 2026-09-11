@@ -1,9 +1,12 @@
-// Thin client for the FreelanceOps FastAPI backend (agent/freelanceops/api.py).
-// Set NEXT_PUBLIC_AGENT_API_URL in .env (see .env.example) to point at your
-// running backend — local FastAPI during dev, or the deployed AgentCore/API
-// endpoint once you've run `agentcore launch`.
+// Thin client for the FreelanceOps agent API.
+//
+// The browser never talks to the FastAPI backend directly — it calls these
+// same-origin `/api/*` routes, which are Next.js server route handlers
+// (see app/api/**/route.ts) that proxy to FastAPI with a server-only shared
+// secret attached. This keeps the backend's address and API key out of the
+// browser bundle entirely.
 
-const BASE_URL = process.env.NEXT_PUBLIC_AGENT_API_URL ?? "http://localhost:8787";
+const BASE_URL = "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {

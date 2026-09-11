@@ -10,10 +10,10 @@ import sys
 
 from dotenv import load_dotenv
 from strands import Agent
-from strands.models import BedrockModel
 
 load_dotenv()
 
+from .model_provider import build_model  # noqa: E402  (after load_dotenv)
 from .tools import (  # noqa: E402  (after load_dotenv)
     check_followups,
     draft_followup,
@@ -45,11 +45,7 @@ def build_agent() -> Agent:
     """Create the agent. Tools are just functions decorated with @tool —
     Strands derives each tool's name/schema/description from the function
     signature and docstring, then handles the toolUse -> toolResult loop."""
-    model = BedrockModel(
-        model_id=os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0"),
-        region_name=os.getenv("AWS_REGION", "us-east-1"),
-        temperature=0.3,
-    )
+    model = build_model(temperature=0.3)
     return Agent(
         model=model,
         system_prompt=SYSTEM_PROMPT,

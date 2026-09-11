@@ -17,20 +17,16 @@ from __future__ import annotations
 import os
 
 from strands import tool
-from strands.models import BedrockModel
 
 from . import db
+from .model_provider import build_model
 from .portfolio import STUDIO, format_projects, match_projects
 
 
 # A small, cheap model instance used *inside* tools for text generation.
 # Keeping generation inside the tool means the orchestrating agent stays focused
 # on routing, and each tool owns its own writing style.
-_writer = BedrockModel(
-    model_id=os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0"),
-    region_name=os.getenv("AWS_REGION", "us-east-1"),
-    temperature=0.4,
-)
+_writer = build_model(temperature=0.4)
 
 
 def _generate(prompt: str) -> str:

@@ -8,6 +8,7 @@ server-side only (never in a browser), so it bypasses RLS.
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Any
@@ -60,11 +61,18 @@ def fetch_lead(lead_id: str) -> dict[str, Any] | None:
 
 
 def find_lead_by_name(name: str) -> dict[str, Any] | None:
+    # `name` gets interpolated into a PostgREST `or=` filter string below.
+    # Strip characters that are syntactically significant there (`,`, `(`,
+    # `)`, `%`, `*`) so a crafted client name can't widen or break the
+    # filter — e.g. injecting `,status.eq.paid` to match unrelated rows.
+    safe = re.sub(r"[,()%*]", "", name).strip()
+    if not safe:
+        return None
     rows = (
         client()
         .table("leads")
         .select("*")
-        .or_(f"client_name.ilike.%{name}%,company.ilike.%{name}%")
+        .or_(f"client_name.ilike.%{safe}%,company.ilike.%{safe}%")
         .limit(1)
         .execute()
         .data
