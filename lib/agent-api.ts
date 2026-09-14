@@ -40,6 +40,12 @@ export type Invoice = {
   days_overdue: number;
 };
 
+export type ImpactStats = {
+  proposals_count: number;
+  followups_sent: number;
+  hours_saved: number;
+};
+
 export const agentApi = {
   health: () => request<{ status: string }>("/api/health"),
 
@@ -64,6 +70,14 @@ export const agentApi = {
     request<{ reminder: string }>("/api/invoice-reminder", {
       method: "POST",
       body: JSON.stringify({ client_name: clientName }),
+    }),
+
+  impactStats: () => request<ImpactStats>("/api/impact-stats"),
+
+  markFollowupSent: (leadId: string) =>
+    request<{ status: string }>("/api/mark-followup-sent", {
+      method: "POST",
+      body: JSON.stringify({ lead_id: leadId }),
     }),
 
   askAgent: (prompt: string) =>

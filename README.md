@@ -107,6 +107,9 @@ flowchart LR
 
 ### Security notes
 
+- **Password-gated dashboard** (`DASHBOARD_PASSWORD`) — the whole app sits
+  behind a lightweight password check (`middleware.ts`), so a public deploy
+  URL can't be used or quota-drained by strangers who find the link.
 - **No direct browser to backend calls.** The dashboard only calls its own
   origin (`/api/*`); a Next.js server route forwards to FastAPI with a
   shared secret attached server-side.
@@ -162,9 +165,10 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Fill in `.env.local` (root): `AGENT_API_URL=http://localhost:8787` and the
-same `AGENT_API_KEY` as `agent/.env`. Both are server-only — Next.js never
-sends them to the browser.
+Fill in `.env.local` (root): `AGENT_API_URL=http://localhost:8787`, the
+same `AGENT_API_KEY` as `agent/.env`, and `DASHBOARD_PASSWORD` (any string —
+this gates the whole dashboard; leave unset to disable locally). All three
+are server-only — Next.js never sends them to the browser.
 
 ### 3. Deploy to Bedrock AgentCore (optional production path)
 

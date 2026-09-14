@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { agentApi, type Invoice, type Lead } from "@/lib/agent-api";
+import { agentApi, type ImpactStats, type Invoice, type Lead } from "@/lib/agent-api";
 
 export default function Index() {
   return (
@@ -21,6 +21,7 @@ export default function Index() {
             Drafts proposals, chases quiet leads, and reminds clients about overdue invoices.
             It works in the background and only surfaces when a real decision needs you.
           </p>
+          <ImpactStrip />
         </div>
       </header>
 
@@ -32,6 +33,32 @@ export default function Index() {
         </div>
       </main>
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Impact strip — real counts, not invented numbers                       */
+/* ---------------------------------------------------------------------- */
+
+function ImpactStrip() {
+  const [stats, setStats] = useState<ImpactStats | null>(null);
+
+  useEffect(() => {
+    agentApi
+      .impactStats()
+      .then(setStats)
+      .catch(() => {
+        // Non-critical — the dashboard works fine without this figure.
+      });
+  }, []);
+
+  if (!stats || (stats.proposals_count === 0 && stats.followups_sent === 0)) return null;
+
+  return (
+    <p className="mt-4 font-mono text-xs text-primary/80">
+      ~{stats.hours_saved}h saved so far — {stats.proposals_count} proposals drafted,{" "}
+      {stats.followups_sent} follow-ups sent
+    </p>
   );
 }
 
@@ -162,6 +189,8 @@ function OperationsPanel() {
   const [loading, setLoading] = useState(false);
   const [drafting, setDrafting] = useState<string | null>(null);
   const [followupText, setFollowupText] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState<string | null>(null);
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
   async function load() {
     setLoading(true);
@@ -169,6 +198,7 @@ function OperationsPanel() {
       const { stale_leads, overdue_invoices } = await agentApi.dashboardSummary();
       setLeads(stale_leads);
       setInvoices(overdue_invoices);
+      setSentIds(new Set());
     } catch (err) {
       toast.error("Couldn't load the ledger", { description: (err as Error).message });
     } finally {
@@ -191,6 +221,19 @@ function OperationsPanel() {
       toast.error("Couldn't draft that follow-up", { description: (err as Error).message });
     } finally {
       setDrafting(null);
+    }
+  }
+
+  async function markSent(leadId: string) {
+    setSending(leadId);
+    try {
+      await agentApi.markFollowupSent(leadId);
+      setSentIds((prev) => new Set(prev).add(leadId));
+      toast.success("Marked as sent");
+    } catch (err) {
+      toast.error("Couldn't mark that as sent", { description: (err as Error).message });
+    } finally {
+      setSending(null);
     }
   }
 
@@ -247,9 +290,24 @@ function OperationsPanel() {
                   </div>
                 </div>
                 {followupText[lead.id] && (
-                  <pre className="mt-2 whitespace-pre-wrap rounded-sm bg-background/5 p-3 text-xs leading-relaxed text-card-foreground">
-                    {followupText[lead.id]}
-                  </pre>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <pre className="whitespace-pre-wrap rounded-sm bg-background/5 p-3 text-xs leading-relaxed text-card-foreground">
+                      {followupText[lead.id]}
+                    </pre>
+                    {sentIds.has(lead.id) ? (
+                      <p className="text-xs text-primary">✓ Marked as sent</p>
+                    ) : (
+                      <div>
+                        <Button
+                          size="sm"
+                          onClick={() => markSent(lead.id)}
+                          disabled={sending === lead.id}
+                        >
+                          {sending === lead.id ? "Recording…" : "Mark as sent"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
