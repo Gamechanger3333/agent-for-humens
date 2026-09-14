@@ -114,6 +114,10 @@ class AgentRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=2000)
 
 
+class MarkSentRequest(BaseModel):
+    lead_id: str = Field(min_length=1, max_length=100)
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
@@ -150,6 +154,29 @@ def api_dashboard_summary() -> dict:
     leads = check_followups(days=4)
     invoices = db.fetch_overdue_invoices()
     return {"stale_leads": leads, "overdue_invoices": invoices}
+
+
+@app.get("/api/impact-stats", dependencies=[Depends(require_api_key)])
+def api_impact_stats() -> dict:
+    """Real counts behind the dashboard's time-saved figure — no invented numbers."""
+    stats = db.fetch_impact_stats()
+    proposals_count = stats["proposals_count"]
+    followups_sent = stats["followups_sent"]
+    # Conservative per-task estimates: ~30 min to research + write a tailored
+    # proposal by hand, ~8 min to draft and send a follow-up.
+    minutes_saved = proposals_count * 30 + followups_sent * 8
+    return {
+        "proposals_count": proposals_count,
+        "followups_sent": followups_sent,
+        "hours_saved": round(minutes_saved / 60, 1),
+    }
+
+
+@app.post("/api/mark-followup-sent", dependencies=[Depends(require_api_key)])
+def api_mark_followup_sent(req: MarkSentRequest) -> dict:
+    """Record that a drafted follow-up was actually sent, without regenerating it."""
+    db.mark_followed_up(req.lead_id)
+    return {"status": "ok"}
 
 
 @app.post("/api/agent", dependencies=[Depends(require_api_key)])

@@ -127,3 +127,19 @@ def fetch_overdue_invoices() -> list[dict[str, Any]]:
             - datetime.fromisoformat(row["due_date"]).date()
         ).days
     return rows
+
+
+def fetch_impact_stats() -> dict[str, int]:
+    """Counts behind the dashboard's "time saved" figure.
+
+    Deliberately conservative, real counts — no invented numbers: how many
+    proposals the agent has actually drafted, and how many follow-ups have
+    actually been sent (bumped via mark_followed_up).
+    """
+    proposals_res = client().table("proposals").select("id", count="exact").execute()
+    proposals_count = proposals_res.count or 0
+
+    leads = client().table("leads").select("followup_count").execute().data or []
+    followups_sent = sum(int(lead.get("followup_count") or 0) for lead in leads)
+
+    return {"proposals_count": proposals_count, "followups_sent": followups_sent}
